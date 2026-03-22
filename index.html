@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kerala Fuel Pulse — ഇന്ധന വില & ജീവിതച്ചെലവ്</title>
+<meta name="description" content="Kerala petrol, diesel, CNG & EV prices with cost of living index by city. Daily updated.">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f2f2f0;--surface:#ffffff;--surface2:#f7f7f6;--surface3:#efefee;
+  --text:#18181b;--ink2:#3f3f46;--muted:#71717a;--hint:#a1a1aa;
+  --border:#e4e4e7;--border2:#d4d4d8;--border3:#a1a1aa;
+
+  /* Semantic — all map to grayscale */
+  --green:#27272a;--green-bg:#f4f4f5;--green-border:#d4d4d8;
+  --red:#18181b;--red-bg:#f4f4f5;
+  --amber:#52525b;--amber-bg:#f4f4f5;--amber-border:#d4d4d8;
+  --blue:#3f3f46;--blue-bg:#f4f4f5;
+  --teal:#27272a;--teal-bg:#efefee;
+  --gold:#18181b;
+
+  /* Status indicators keep subtle distinction */
+  --ok:#27272a;--ok-bg:#f0fdf4;--ok-border:#bbf7d0;
+  --warn:#52525b;--warn-bg:#fefce8;--warn-border:#fef08a;
+  --danger:#18181b;--danger-bg:#fef2f2;--danger-border:#fecaca;
+
+  --r:10px;--r-lg:16px;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+
+.shell{max-width:920px;margin:0 auto;padding:0 16px 60px;position:relative;z-index:1}
+
+/* Header */
+header{padding:22px 0 18px;border-bottom:1px solid var(--border);margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;background:var(--text);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.logo-text .en{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.logo-text .ml{font-size:13px;color:var(--muted);font-family:'Noto Sans Malayalam',sans-serif;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.live-pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.05em}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--text);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.lang-toggle{display:flex;border:1px solid var(--border2);border-radius:100px;overflow:hidden;background:var(--surface)}
+.lt-btn{padding:5px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .15s;font-family:'Noto Sans Malayalam','Inter',sans-serif;white-space:nowrap}
+.lt-btn.active{background:var(--text);color:#fff}
+
+/* City selector */
+.city-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-end}
+.sel-wrap{display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px}
+.sel-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sel-lbl .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;margin-left:4px;text-transform:none}
+select{width:100%;padding:9px 30px 9px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a6a52' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;outline:none;transition:border-color .2s}
+select:focus{border-color:var(--border3)}
+
+/* Fuel hero */
+.fuel-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px;display:flex;align-items:stretch;gap:20px;flex-wrap:wrap}
+.hero-left{flex:1;min-width:180px}
+.hero-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.hero-lbl .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;text-transform:none;margin-left:4px}
+.hero-price{font-family:'Share Tech Mono',monospace;font-size:52px;line-height:1;color:var(--text)}
+.hero-price.up{color:#dc2626}.hero-price.dn{color:#15803d}.hero-price.mid{color:var(--text)}
+.hero-sub{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chg-badge{padding:3px 10px;border-radius:100px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:600}
+.badge-up{background:#fef2f2;color:#dc2626}.badge-dn{background:#f0fdf4;color:#15803d}
+.hero-cap{font-size:11px;color:var(--muted)}
+.fuel-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1.2;min-width:240px}
+@media(max-width:560px){.fuel-grid{grid-template-columns:repeat(3,1fr)}}
+.fuel-pill{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px;text-align:center}
+.fp-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.fp-ml{font-family:'Noto Sans Malayalam',sans-serif;font-size:10px;color:var(--hint);display:block;margin-bottom:3px}
+.fp-val{font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700}
+.fp-unit{font-size:9px;color:var(--muted);margin-top:2px}
+.fv-petrol{color:var(--text)}.fv-diesel{color:var(--ink2)}.fv-cng{color:var(--muted)}.fv-ev{color:#15803d}.fv-lpg{color:var(--text)}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--surface2);border-radius:var(--r);padding:12px 14px}
+.sc-lbl{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.sc-lbl .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;font-size:10px;display:block;margin-top:1px}
+.sc-val{font-size:20px;font-weight:600;line-height:1}
+.sc-sub{font-size:10px;color:var(--hint);margin-top:3px}
+.sc-note{font-size:10px;color:var(--hint);margin-top:5px;line-height:1.4;padding-top:5px;border-top:1px solid var(--border)}
+.sc-danger{color:#dc2626}.sc-warn{color:var(--muted)}.sc-ok{color:#15803d}
+
+/* VS strip */
+.vs-strip{display:flex;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.vs-seg{flex:1;padding:10px 12px;text-align:center;border-right:1px solid var(--border)}
+.vs-seg:last-child{border-right:none}
+.vs-seg.lo{background:#f0fdf4}.vs-seg.hi{background:#fef2f2}.vs-seg.mid{background:var(--surface2)}
+.vs-loc{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.vs-num{font-size:16px;font-weight:600}
+.vs-seg.lo .vs-num{color:#15803d}.vs-seg.hi .vs-num{color:#dc2626}
+.vs-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+.vs-lbl .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;display:block;font-size:9px}
+
+/* Best stations */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.card-title .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;text-transform:none;margin-left:5px;font-size:12px}
+.best-banner{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--r);background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.bb-label{font-size:10px;font-weight:600;color:#15803d;text-transform:uppercase;letter-spacing:.05em}
+.bb-label .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;text-transform:none;font-weight:400;margin-left:4px}
+.bb-name{font-size:14px;font-weight:700;color:#15803d;margin-top:2px}
+.bb-addr{font-size:11px;color:#15803d;opacity:.75;margin-top:1px}
+.bb-price{font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;color:#15803d}
+.station-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.station-row:last-child{border-bottom:none}
+.st-rank{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.r1{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.r2{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.rn{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.st-info{flex:1;min-width:0}
+.st-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-addr{font-size:11px;color:var(--muted);margin-top:1px}
+.st-price{font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;flex-shrink:0}
+.sp-low{color:#15803d}.sp-mid{color:var(--muted)}.sp-hi{color:#dc2626}
+.map-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.map-btn:hover{background:var(--bg)}
+.savings-note{font-size:11px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5}
+.savings-note .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;display:block;margin-top:3px;font-size:10px}
+
+/* Grid 2 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+
+/* COL bars */
+.col-bar-item{margin-bottom:10px}
+.col-bar-hd{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px}
+.col-bar-hd .bn{font-weight:500;color:var(--text)}
+.col-bar-hd .bn .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;font-size:10px;color:var(--muted);margin-left:4px}
+.col-bar-hd .bv{color:var(--muted);font-family:'Share Tech Mono',monospace}
+.bar-track{height:9px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:5px;transition:width .55s cubic-bezier(.34,1.3,.64,1)}
+
+/* Wallet */
+.wallet-title{font-size:11px;font-weight:600;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.06em}
+.wallet-title .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;text-transform:none;margin-left:5px;font-size:10px}
+.wallet-row{display:flex;height:26px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);margin-bottom:6px}
+.wseg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;transition:flex .6s cubic-bezier(.34,1.1,.64,1)}
+.wlabels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.insight-box{padding:11px 13px;border-radius:var(--r);background:var(--surface2);border:1px solid var(--border);font-size:12px;color:var(--ink2);line-height:1.6}
+.insight-box .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;display:block;margin-top:4px;font-size:11px}
+
+/* Chart */
+.chart-wrap{position:relative;width:100%;height:200px;margin-top:8px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.leg-swatch{width:10px;height:10px;border-radius:2px}
+
+/* Ripple */
+.ripple-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.ripple-item:last-child{border-bottom:none;padding-bottom:0}
+.ri-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px}
+.ri-body{flex:1}
+.ri-name{font-size:12px;font-weight:600;color:var(--text)}
+.ri-name .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;font-size:11px;color:var(--muted);display:block}
+.ri-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.ri-delta{font-size:12px;font-weight:600;white-space:nowrap;padding-top:1px}
+.ri-delta.up{color:#dc2626}.ri-delta.dn{color:#15803d}.ri-neu{color:var(--muted)}
+
+footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--hint)}
+footer .ml-lbl{font-family:'Noto Sans Malayalam',sans-serif;display:block;margin-top:2px;font-size:10px}
+.share-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:var(--text);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s}
+.share-btn:hover{opacity:.88}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⛽</div>
+    <div class="logo-text">
+      <div class="en">Kerala Fuel Pulse</div>
+      <div class="ml">കേരള ഇന്ധന നാഡി</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-pill"><div class="pulse-dot"></div><span id="liveDate">LIVE · Apr 2026</span></div>
+    <div class="lang-toggle">
+      <button class="lt-btn active" id="btnEN" onclick="setLang('en')">English</button>
+      <button class="lt-btn" id="btnML" onclick="setLang('ml')">മലയാളം</button>
+    </div>
+  </div>
+</header>
+
+<div class="city-bar">
+  <div class="sel-wrap">
+    <div class="sel-lbl">District <span class="ml-lbl">ജില്ല</span></div>
+    <select id="citySel" onchange="onDistrictChange()"></select>
+  </div>
+  <div class="sel-wrap">
+    <div class="sel-lbl">Local body <span class="ml-lbl">തദ്ദേശ സ്വയംഭരണം</span></div>
+    <select id="lbSel" onchange="render()"></select>
+  </div>
+</div>
+
+<div class="fuel-hero">
+  <div class="hero-left">
+    <div class="hero-lbl" id="heroLbl">Petrol price <span class="ml-lbl">പെട്രോൾ വില</span></div>
+    <div class="hero-price" id="heroPrice">₹106.32</div>
+    <div class="hero-sub">
+      <span class="chg-badge badge-up" id="chgBadge">▲ ₹2.10</span>
+      <span class="hero-cap" id="heroCap">vs last month</span>
+    </div>
+  </div>
+  <div class="fuel-grid" id="fuelGrid"></div>
+</div>
+
+<div class="stats-grid" id="statsGrid"></div>
+
+<div id="lbDetailCard"></div>
+
+<div class="vs-strip" id="vsStrip"></div>
+
+<div class="card">
+  <div class="card-title" id="stationsTitle">Best petrol prices near you <span class="ml-lbl">സമീപത്തെ ഏറ്റവും കുറഞ്ഞ വില</span></div>
+  <div id="stationList"></div>
+</div>
+
+<div class="grid2">
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title" id="rippleTitle">How fuel prices ripple into daily life <span class="ml-lbl">ഇന്ധന വില ദൈനംദിന ജീവിതത്തെ ബാധിക്കുന്നത്</span></div>
+    <div id="rippleList"></div>
+  </div>
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title" id="budgetTitle">Monthly household budget <span class="ml-lbl">പ്രതിമാസ ചെലവ്</span></div>
+    <div id="budgetBars"></div>
+    <div class="wallet-title" id="walletTitle">Where ₹100 goes <span class="ml-lbl">₹100 എവിടെ പോകുന്നു</span></div>
+    <div class="wallet-row" id="walletRow"></div>
+    <div class="wlabels" id="walletLbls"></div>
+    <div class="insight-box" id="insightBox"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <div class="card-title" id="chartTitle">City comparison — fuel cost vs monthly spend <span class="ml-lbl">നഗര താരതമ്യം</span></div>
+  <div class="chart-legend" id="chartLegend"></div>
+  <div class="chart-wrap"><canvas id="cityChart"></canvas></div>
+</div>
+
+<footer>
+  <div>
+    <span id="footerEn">Kerala Fuel Pulse · Prices from HPCL/BPCL/IndianOil · Apr 2026</span>
+    <span class="ml-lbl" id="footerMl">കേരള ഇന്ധന നാഡി · HPCL/BPCL/IndianOil · ഏപ്രിൽ 2026</span>
+    <span style="display:block;margin-top:4px;font-size:10px;color:var(--hint)">© 2026 Manaksu</span>
+  </div>
+  <button class="share-btn" onclick="copyLink()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Share
+  </button>
+</footer>
+
+</div>
+<script>
+/* ── Data ── */
+const CITIES = {
+  'Thiruvananthapuram':{ml:'തിരുവനന്തപുരം',petrol:106.32,diesel:94.62,cng:88.50,ev:8.20,lpg:903.00,lpg_market:1008.50,lpg_delivery:40,lpg_wait:2,lpg_stock:'good',chg:+2.10,col:108,rent:12000,groc:5800,auto:180,school:3500,dining:4200,fuel_m:1820},
+  'Kochi':{ml:'കൊച്ചി',petrol:107.18,diesel:95.40,cng:89.20,ev:7.90,lpg:903.00,lpg_market:1012.00,lpg_delivery:45,lpg_wait:3,lpg_stock:'moderate',chg:+2.35,col:118,rent:16000,groc:6500,auto:200,school:4800,dining:5200,fuel_m:1840},
+  'Kozhikode':{ml:'കോഴിക്കോട്',petrol:106.85,diesel:95.02,cng:null,ev:8.10,lpg:903.00,lpg_market:1009.00,lpg_delivery:38,lpg_wait:2,lpg_stock:'good',chg:+2.18,col:102,rent:11000,groc:5600,auto:165,school:3200,dining:4000,fuel_m:1830},
+  'Thrissur':{ml:'തൃശ്ശൂർ',petrol:106.55,diesel:94.78,cng:null,ev:8.05,lpg:903.00,lpg_market:1007.50,lpg_delivery:35,lpg_wait:4,lpg_stock:'moderate',chg:+2.12,col:98,rent:10000,groc:5400,auto:155,school:3000,dining:3800,fuel_m:1825},
+  'Kannur':{ml:'കണ്ണൂർ',petrol:106.40,diesel:94.65,cng:null,ev:8.15,lpg:903.00,lpg_market:1006.00,lpg_delivery:32,lpg_wait:2,lpg_stock:'good',chg:+2.08,col:95,rent:9500,groc:5200,auto:150,school:2800,dining:3600,fuel_m:1822},
+  'Kollam':{ml:'കൊല്ലം',petrol:106.28,diesel:94.55,cng:null,ev:8.20,lpg:903.00,lpg_market:1005.50,lpg_delivery:30,lpg_wait:3,lpg_stock:'good',chg:+2.05,col:94,rent:9000,groc:5100,auto:148,school:2700,dining:3500,fuel_m:1820},
+  'Palakkad':{ml:'പാലക്കാട്',petrol:106.20,diesel:94.48,cng:null,ev:8.00,lpg:903.00,lpg_market:1004.00,lpg_delivery:28,lpg_wait:5,lpg_stock:'low',chg:+2.02,col:90,rent:8500,groc:4900,auto:140,school:2500,dining:3300,fuel_m:1818},
+  'Malappuram':{ml:'മലപ്പുറം',petrol:106.15,diesel:94.42,cng:null,ev:8.00,lpg:903.00,lpg_market:1004.50,lpg_delivery:28,lpg_wait:3,lpg_stock:'moderate',chg:+2.00,col:88,rent:8000,groc:4800,auto:138,school:2400,dining:3200,fuel_m:1816},
+  'Kottayam':{ml:'കോട്ടയം',petrol:106.35,diesel:94.60,cng:null,ev:8.10,lpg:903.00,lpg_market:1006.50,lpg_delivery:33,lpg_wait:2,lpg_stock:'good',chg:+2.06,col:96,rent:9200,groc:5200,auto:152,school:2900,dining:3700,fuel_m:1821},
+  'Alappuzha':{ml:'ആലപ്പുഴ',petrol:106.25,diesel:94.52,cng:null,ev:8.05,lpg:903.00,lpg_market:1005.00,lpg_delivery:30,lpg_wait:4,lpg_stock:'moderate',chg:+2.03,col:92,rent:8800,groc:5000,auto:145,school:2600,dining:3400,fuel_m:1819},
+  'Idukki':{ml:'ഇടുക്കി',petrol:107.50,diesel:95.80,cng:null,ev:null,lpg:903.00,lpg_market:1018.00,lpg_delivery:55,lpg_wait:7,lpg_stock:'low',chg:+2.40,col:85,rent:7500,groc:5500,auto:130,school:2200,dining:3000,fuel_m:1845},
+  'Ernakulam':{ml:'എറണാകുളം',petrol:107.10,diesel:95.35,cng:89.10,ev:7.85,lpg:903.00,lpg_market:1011.00,lpg_delivery:43,lpg_wait:3,lpg_stock:'moderate',chg:+2.30,col:115,rent:15000,groc:6300,auto:195,school:4500,dining:5000,fuel_m:1838},
+  'Pathanamthitta':{ml:'പത്തനംതിട്ട',petrol:106.30,diesel:94.58,cng:null,ev:8.10,lpg:903.00,lpg_market:1006.00,lpg_delivery:32,lpg_wait:3,lpg_stock:'good',chg:+2.07,col:91,rent:8600,groc:5050,auto:142,school:2550,dining:3450,fuel_m:1819},
+  'Wayanad':{ml:'വയനാട്',petrol:107.20,diesel:95.45,cng:null,ev:null,lpg:903.00,lpg_market:1015.00,lpg_delivery:50,lpg_wait:6,lpg_stock:'low',chg:+2.32,col:87,rent:7800,groc:5300,auto:135,school:2300,dining:3100,fuel_m:1840},
+  'Kasaragod':{ml:'കാസർഗോഡ്',petrol:106.50,diesel:94.75,cng:null,ev:8.00,lpg:903.00,lpg_market:1007.00,lpg_delivery:35,lpg_wait:2,lpg_stock:'good',chg:+2.10,col:89,rent:8200,groc:4950,auto:142,school:2450,dining:3250,fuel_m:1823},
+};
+
+const KERALA_AVG_PETROL = 106.60;
+const INDIA_AVG_PETROL = 104.20;
+
+const STATIONS = {
+  'Thiruvananthapuram':[
+    {name:'HPCL',addr:'MG Road, Statue Junction',petrol:106.32,lat:8.5074,lng:76.9570},
+    {name:'IndianOil',addr:'Palayam, Near Secretariat',petrol:106.32,lat:8.5012,lng:76.9542},
+    {name:'BPCL',addr:'Kesavadasapuram, Pattom',petrol:106.45,lat:8.5215,lng:76.9421},
+    {name:'HPCL',addr:'Vellayambalam Junction',petrol:106.52,lat:8.5145,lng:76.9534},
+    {name:'Reliance',addr:'Kazhakkoottam Bypass',petrol:106.28,lat:8.5562,lng:76.8804},
+  ],
+  'Kochi':[
+    {name:'IndianOil',addr:'MG Road, Ernakulam',petrol:107.18,lat:9.9834,lng:76.2827},
+    {name:'HPCL',addr:'Edapally Junction',petrol:107.18,lat:10.0269,lng:76.3087},
+    {name:'BPCL',addr:'Kakkanad, NH Bypass',petrol:107.32,lat:10.0070,lng:76.3440},
+    {name:'IndianOil',addr:'Thevara, South Chittoor Rd',petrol:107.25,lat:9.9391,lng:76.2891},
+    {name:'HPCL',addr:'Palarivattom Junction',petrol:107.40,lat:10.0050,lng:76.3050},
+  ],
+  'Kozhikode':[
+    {name:'HPCL',addr:'Mavoor Road, Calicut',petrol:106.85,lat:11.2588,lng:75.7804},
+    {name:'IndianOil',addr:'Bank Road, Kozhikode',petrol:106.85,lat:11.2555,lng:75.7762},
+    {name:'BPCL',addr:'Palayam, Kozhikode',petrol:107.00,lat:11.2496,lng:75.7838},
+    {name:'HPCL',addr:'Nadakkavu, Medical College Rd',petrol:107.10,lat:11.2640,lng:75.7853},
+    {name:'IndianOil',addr:'Feroke, NH 66',petrol:106.90,lat:11.1980,lng:75.8140},
+  ],
+  'Thrissur':[
+    {name:'BPCL',addr:'Round South, Thrissur',petrol:106.55,lat:10.5276,lng:76.2144},
+    {name:'IndianOil',addr:'Sakthan Nagar',petrol:106.55,lat:10.5320,lng:76.2180},
+    {name:'HPCL',addr:'Punkunnam Junction',petrol:106.70,lat:10.5360,lng:76.2100},
+    {name:'HPCL',addr:'Ollur Road, Thrissur',petrol:106.62,lat:10.5200,lng:76.2060},
+    {name:'IndianOil',addr:'Ayyanthole, Thrissur',petrol:106.80,lat:10.5440,lng:76.2240},
+  ],
+  'Kannur':[
+    {name:'IndianOil',addr:'SM Street, Kannur',petrol:106.40,lat:11.8745,lng:75.3704},
+    {name:'HPCL',addr:'Fort Road, Kannur',petrol:106.40,lat:11.8698,lng:75.3682},
+    {name:'BPCL',addr:'Thalassery Road, Kannur',petrol:106.55,lat:11.8810,lng:75.3750},
+    {name:'IndianOil',addr:'Payyanur Junction',petrol:106.45,lat:12.0985,lng:75.2010},
+    {name:'HPCL',addr:'Iritty, Kannur',petrol:106.60,lat:11.9640,lng:75.5730},
+  ],
+  'Kollam':[
+    {name:'HPCL',addr:'Chinnakada, Kollam',petrol:106.28,lat:8.8872,lng:76.5961},
+    {name:'IndianOil',addr:'Asramam Road, Kollam',petrol:106.28,lat:8.8921,lng:76.5993},
+    {name:'BPCL',addr:'Polayathode, NH 66',petrol:106.42,lat:8.9050,lng:76.6100},
+    {name:'IndianOil',addr:'Karunagappally',petrol:106.35,lat:9.0542,lng:76.5331},
+    {name:'HPCL',addr:'Punalur Town',petrol:106.50,lat:9.0095,lng:76.9220},
+  ],
+};
+
+/* ── Local body hierarchy ── */
+/* type: 'corporation' | 'municipality' | 'panchayat' */
+const LOCAL_BODIES = {
+  'Thiruvananthapuram':[
+    {name:'Thiruvananthapuram Corporation',ml:'തിരുവനന്തപുരം കോർപ്പറേഷൻ',type:'corporation',cess:1.50,col:112,autoMin:30,autoMax:200,lpgDistributor:'BPCL Indane — Vazhuthacaud',lpgWait:2,lpgStock:'good',stations:[{name:'HPCL',addr:'MG Road, Statue Junction'},{name:'IndianOil',addr:'Palayam, Near Secretariat'},{name:'BPCL',addr:'Vellayambalam Junction'}]},
+    {name:'Neyyattinkara Municipality',ml:'നെയ്യാറ്റിൻകര നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:25,autoMax:150,lpgDistributor:'HPCL HP Gas — Neyyattinkara',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Main Road, Neyyattinkara'},{name:'HPCL',addr:'Bypass Rd, Neyyattinkara'}]},
+    {name:'Attingal Municipality',ml:'അട്ടിങ്ങൽ നഗരസഭ',type:'municipality',cess:1.00,col:85,autoMin:25,autoMax:140,lpgDistributor:'IndianOil Indane — Attingal',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Market Rd, Attingal'},{name:'HPCL',addr:'NH66, Attingal'}]},
+    {name:'Varkala Municipality',ml:'വർക്കല നഗരസഭ',type:'municipality',cess:1.00,col:87,autoMin:25,autoMax:145,lpgDistributor:'BPCL Indane — Varkala',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Beach Rd, Varkala'},{name:'HPCL',addr:'Sivagiri Rd, Varkala'}]},
+    {name:'Nedumangad Municipality',ml:'നെടുമങ്ങാട് നഗരസഭ',type:'municipality',cess:1.00,col:83,autoMin:22,autoMax:130,lpgDistributor:'HPCL HP Gas — Nedumangad',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Main Rd, Nedumangad'}]},
+    {name:'Parassala Panchayat',ml:'പരശ്ശാല പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:78,autoMin:20,autoMax:100,lpgDistributor:'IndianOil — Parassala',lpgWait:4,lpgStock:'good',stations:[{name:'IndianOil',addr:'NH66, Parassala'}]},
+    {name:'Vellanad Panchayat',ml:'വെള്ളനാട് പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:20,autoMax:100,lpgDistributor:'BPCL — Vellanad',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Vellanad Junction'}]},
+  ],
+  'Ernakulam':[
+    {name:'Kochi Corporation',ml:'കൊച്ചി കോർപ്പറേഷൻ',type:'corporation',cess:2.00,col:122,autoMin:35,autoMax:250,lpgDistributor:'BPCL Indane — Ernakulam',lpgWait:3,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'MG Road, Ernakulam'},{name:'HPCL',addr:'Edapally Junction'},{name:'BPCL',addr:'Kakkanad NH Bypass'}]},
+    {name:'Aluva Municipality',ml:'ആലുവ നഗരസഭ',type:'municipality',cess:1.00,col:102,autoMin:28,autoMax:180,lpgDistributor:'HPCL HP Gas — Aluva',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Aluva Main Rd'},{name:'IndianOil',addr:'NH Bypass, Aluva'}]},
+    {name:'Angamaly Municipality',ml:'അങ്കമാലി നഗരസഭ',type:'municipality',cess:1.00,col:98,autoMin:25,autoMax:160,lpgDistributor:'IndianOil Indane — Angamaly',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Angamaly Market Rd'},{name:'HPCL',addr:'Angamaly Bypass'}]},
+    {name:'North Paravur Municipality',ml:'നോർത്ത് പറവൂർ നഗരസഭ',type:'municipality',cess:1.00,col:95,autoMin:25,autoMax:155,lpgDistributor:'BPCL — North Paravur',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Main Rd, N. Paravur'}]},
+    {name:'Kothamangalam Municipality',ml:'കോതമംഗലം നഗരസഭ',type:'municipality',cess:1.00,col:90,autoMin:23,autoMax:145,lpgDistributor:'HPCL — Kothamangalam',lpgWait:4,lpgStock:'good',stations:[{name:'HPCL',addr:'Kothamangalam Town'}]},
+    {name:'Perumbavoor Municipality',ml:'പെരുമ്പാവൂർ നഗരസഭ',type:'municipality',cess:1.00,col:92,autoMin:24,autoMax:148,lpgDistributor:'IndianOil — Perumbavoor',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Perumbavoor Town Rd'}]},
+    {name:'Paravur Panchayat',ml:'പറവൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:82,autoMin:20,autoMax:110,lpgDistributor:'BPCL — Paravur',lpgWait:4,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Paravur Junction'}]},
+    {name:'Kolenchery Panchayat',ml:'കോലഞ്ചേരി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:85,autoMin:20,autoMax:115,lpgDistributor:'HPCL — Kolenchery',lpgWait:4,lpgStock:'good',stations:[{name:'HPCL',addr:'Kolenchery Main Rd'}]},
+  ],
+  'Kozhikode':[
+    {name:'Kozhikode Corporation',ml:'കോഴിക്കോട് കോർപ്പറേഷൻ',type:'corporation',cess:1.50,col:108,autoMin:30,autoMax:220,lpgDistributor:'HPCL HP Gas — Calicut',lpgWait:2,lpgStock:'good',stations:[{name:'HPCL',addr:'Mavoor Road, Calicut'},{name:'IndianOil',addr:'Bank Road, Kozhikode'},{name:'BPCL',addr:'Palayam, Kozhikode'}]},
+    {name:'Vadakara Municipality',ml:'വടകര നഗരസഭ',type:'municipality',cess:1.00,col:90,autoMin:25,autoMax:155,lpgDistributor:'IndianOil — Vadakara',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Vadakara Beach Rd'},{name:'HPCL',addr:'NH66, Vadakara'}]},
+    {name:'Koyilandy Municipality',ml:'കൊയിലാണ്ടി നഗരസഭ',type:'municipality',cess:1.00,col:85,autoMin:22,autoMax:140,lpgDistributor:'BPCL — Koyilandy',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Koyilandy Main Rd'}]},
+    {name:'Ramanattukara Municipality',ml:'രാമനാട്ടുകര നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:23,autoMax:145,lpgDistributor:'HPCL — Ramanattukara',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Ramanattukara Junction'}]},
+    {name:'Chelannur Panchayat',ml:'ചേളന്നൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:78,autoMin:20,autoMax:100,lpgDistributor:'IndianOil — Chelannur',lpgWait:5,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Chelannur Rd'}]},
+    {name:'Feroke Panchayat',ml:'ഫറോക്ക് പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:80,autoMin:20,autoMax:105,lpgDistributor:'BPCL — Feroke',lpgWait:4,lpgStock:'good',stations:[{name:'IndianOil',addr:'Feroke, NH66'}]},
+  ],
+  'Thrissur':[
+    {name:'Thrissur Corporation',ml:'തൃശ്ശൂർ കോർപ്പറേഷൻ',type:'corporation',cess:1.50,col:104,autoMin:28,autoMax:200,lpgDistributor:'BPCL Indane — Thrissur',lpgWait:4,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Round South, Thrissur'},{name:'IndianOil',addr:'Sakthan Nagar'},{name:'HPCL',addr:'Punkunnam Junction'}]},
+    {name:'Chalakudy Municipality',ml:'ചാലക്കുടി നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:23,autoMax:145,lpgDistributor:'HPCL HP Gas — Chalakudy',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Chalakudy Town Rd'},{name:'IndianOil',addr:'NH544, Chalakudy'}]},
+    {name:'Irinjalakuda Municipality',ml:'ഇരിങ്ങാലക്കുട നഗരസഭ',type:'municipality',cess:1.00,col:87,autoMin:22,autoMax:140,lpgDistributor:'IndianOil — Irinjalakuda',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Irinjalakuda Town'},{name:'BPCL',addr:'NH544, Irinjalakuda'}]},
+    {name:'Guruvayur Municipality',ml:'ഗുരുവായൂർ നഗരസഭ',type:'municipality',cess:1.00,col:92,autoMin:24,autoMax:155,lpgDistributor:'BPCL — Guruvayur',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Temple Rd, Guruvayur'},{name:'HPCL',addr:'Guruvayur East'}]},
+    {name:'Kunnamkulam Municipality',ml:'കുന്നംകുളം നഗരസഭ',type:'municipality',cess:1.00,col:86,autoMin:22,autoMax:138,lpgDistributor:'HPCL — Kunnamkulam',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Kunnamkulam Town'}]},
+    {name:'Wadakkancherry Municipality',ml:'വടക്കാഞ്ചേരി നഗരസഭ',type:'municipality',cess:1.00,col:83,autoMin:20,autoMax:130,lpgDistributor:'IndianOil — Wadakkancherry',lpgWait:4,lpgStock:'good',stations:[{name:'IndianOil',addr:'Wadakkancherry Main Rd'}]},
+    {name:'Pavaratty Panchayat',ml:'പാവറട്ടി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:18,autoMax:100,lpgDistributor:'BPCL — Pavaratty',lpgWait:5,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Pavaratty Junction'}]},
+    {name:'Chelakkara Panchayat',ml:'ചേലക്കര പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:74,autoMin:18,autoMax:95,lpgDistributor:'HPCL — Chelakkara',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Chelakkara Rd'}]},
+  ],
+  'Kannur':[
+    {name:'Kannur Corporation',ml:'കണ്ണൂർ കോർപ്പറേഷൻ',type:'corporation',cess:1.50,col:100,autoMin:28,autoMax:200,lpgDistributor:'IndianOil Indane — Kannur',lpgWait:2,lpgStock:'good',stations:[{name:'IndianOil',addr:'SM Street, Kannur'},{name:'HPCL',addr:'Fort Road, Kannur'},{name:'BPCL',addr:'Thalassery Road, Kannur'}]},
+    {name:'Thalassery Municipality',ml:'തലശ്ശേരി നഗരസഭ',type:'municipality',cess:1.00,col:90,autoMin:25,autoMax:155,lpgDistributor:'HPCL HP Gas — Thalassery',lpgWait:2,lpgStock:'good',stations:[{name:'HPCL',addr:'Logan Rd, Thalassery'},{name:'IndianOil',addr:'NH 66, Thalassery'}]},
+    {name:'Payyanur Municipality',ml:'പയ്യന്നൂർ നഗരസഭ',type:'municipality',cess:1.00,col:86,autoMin:22,autoMax:140,lpgDistributor:'BPCL — Payyanur',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Payyanur Junction'},{name:'BPCL',addr:'Payyanur Town'}]},
+    {name:'Mattannur Municipality',ml:'മട്ടന്നൂർ നഗരസഭ',type:'municipality',cess:1.00,col:84,autoMin:22,autoMax:135,lpgDistributor:'HPCL — Mattannur',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Mattannur Town Rd'}]},
+    {name:'Iritty Panchayat',ml:'ഇരിട്ടി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:78,autoMin:18,autoMax:100,lpgDistributor:'IndianOil — Iritty',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Iritty, Kannur'}]},
+    {name:'Peravoor Panchayat',ml:'പേരാവൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:18,autoMax:95,lpgDistributor:'BPCL — Peravoor',lpgWait:5,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Peravoor Junction'}]},
+  ],
+  'Kollam':[
+    {name:'Kollam Corporation',ml:'കൊല്ലം കോർപ്പറേഷൻ',type:'corporation',cess:1.50,col:98,autoMin:28,autoMax:190,lpgDistributor:'HPCL HP Gas — Kollam',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Chinnakada, Kollam'},{name:'IndianOil',addr:'Asramam Road, Kollam'},{name:'BPCL',addr:'Polayathode, NH66'}]},
+    {name:'Karunagappally Municipality',ml:'കരുനാഗപ്പള്ളി നഗരസഭ',type:'municipality',cess:1.00,col:84,autoMin:22,autoMax:135,lpgDistributor:'IndianOil — Karunagappally',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Karunagappally Town'},{name:'HPCL',addr:'NH66, Karunagappally'}]},
+    {name:'Punalur Municipality',ml:'പുനലൂർ നഗരസഭ',type:'municipality',cess:1.00,col:80,autoMin:20,autoMax:120,lpgDistributor:'BPCL — Punalur',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Punalur Town'},{name:'BPCL',addr:'Punalur Market'}]},
+    {name:'Paravur Municipality',ml:'പരവൂർ നഗരസഭ',type:'municipality',cess:1.00,col:82,autoMin:20,autoMax:125,lpgDistributor:'HPCL — Paravur',lpgWait:4,lpgStock:'good',stations:[{name:'HPCL',addr:'Paravur Main Rd'}]},
+    {name:'Kottarakkara Municipality',ml:'കൊട്ടാരക്കര നഗരസഭ',type:'municipality',cess:1.00,col:83,autoMin:20,autoMax:128,lpgDistributor:'IndianOil — Kottarakkara',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Kottarakkara Town'}]},
+    {name:'Chavara Panchayat',ml:'ചവറ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:18,autoMax:95,lpgDistributor:'BPCL — Chavara',lpgWait:4,lpgStock:'good',stations:[{name:'BPCL',addr:'Chavara Industrial Area'}]},
+    {name:'Kundara Panchayat',ml:'കുണ്ടറ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:75,autoMin:18,autoMax:92,lpgDistributor:'HPCL — Kundara',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Kundara Junction'}]},
+  ],
+  'Palakkad':[
+    {name:'Palakkad Municipality',ml:'പാലക്കാട് നഗരസഭ',type:'municipality',cess:1.00,col:92,autoMin:25,autoMax:155,lpgDistributor:'HPCL HP Gas — Palakkad',lpgWait:5,lpgStock:'low',stations:[{name:'HPCL',addr:'Fort Rd, Palakkad'},{name:'IndianOil',addr:'Sulthanpet, Palakkad'},{name:'BPCL',addr:'English Church Rd, Palakkad'}]},
+    {name:'Ottapalam Municipality',ml:'ഒറ്റപ്പാലം നഗരസഭ',type:'municipality',cess:1.00,col:82,autoMin:20,autoMax:120,lpgDistributor:'IndianOil — Ottapalam',lpgWait:5,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Ottapalam Town'},{name:'HPCL',addr:'NH544, Ottapalam'}]},
+    {name:'Shoranur Municipality',ml:'ഷൊർണൂർ നഗരസഭ',type:'municipality',cess:1.00,col:80,autoMin:20,autoMax:115,lpgDistributor:'BPCL — Shoranur',lpgWait:6,lpgStock:'low',stations:[{name:'BPCL',addr:'Railway Rd, Shoranur'}]},
+    {name:'Mannarkkad Municipality',ml:'മണ്ണാർക്കാട് നഗരസഭ',type:'municipality',cess:1.00,col:78,autoMin:18,autoMax:110,lpgDistributor:'HPCL — Mannarkkad',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Mannarkkad Town'}]},
+    {name:'Alathur Panchayat',ml:'അലത്തൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:74,autoMin:16,autoMax:90,lpgDistributor:'IndianOil — Alathur',lpgWait:6,lpgStock:'low',stations:[{name:'IndianOil',addr:'Alathur Rd'}]},
+    {name:'Chittur-Thathamangalam Panchayat',ml:'ചിറ്റൂർ-തത്തമംഗലം',type:'panchayat',cess:0.50,col:72,autoMin:16,autoMax:88,lpgDistributor:'BPCL — Chittur',lpgWait:6,lpgStock:'low',stations:[{name:'BPCL',addr:'Chittur Town Rd'}]},
+  ],
+  'Malappuram':[
+    {name:'Malappuram Municipality',ml:'മലപ്പുറം നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:22,autoMax:145,lpgDistributor:'IndianOil Indane — Malappuram',lpgWait:3,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Malappuram Town'},{name:'HPCL',addr:'Bypass Rd, Malappuram'}]},
+    {name:'Tirur Municipality',ml:'തിരൂർ നഗരസഭ',type:'municipality',cess:1.00,col:84,autoMin:20,autoMax:130,lpgDistributor:'HPCL — Tirur',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Tirur Main Rd'},{name:'BPCL',addr:'NH66, Tirur'}]},
+    {name:'Manjeri Municipality',ml:'മഞ്ചേരി നഗരസഭ',type:'municipality',cess:1.00,col:86,autoMin:22,autoMax:138,lpgDistributor:'BPCL — Manjeri',lpgWait:3,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Manjeri Town'},{name:'IndianOil',addr:'Manjeri Market Rd'}]},
+    {name:'Perinthalmanna Municipality',ml:'പെരിന്തൽമണ്ണ നഗരസഭ',type:'municipality',cess:1.00,col:83,autoMin:20,autoMax:128,lpgDistributor:'HPCL — Perinthalmanna',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Perinthalmanna Town'}]},
+    {name:'Kondotty Municipality',ml:'കൊണ്ടോട്ടി നഗരസഭ',type:'municipality',cess:1.00,col:80,autoMin:18,autoMax:118,lpgDistributor:'IndianOil — Kondotty',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Kondotty Town Rd'}]},
+    {name:'Ponnani Municipality',ml:'പൊന്നാനി നഗരസഭ',type:'municipality',cess:1.00,col:82,autoMin:20,autoMax:125,lpgDistributor:'BPCL — Ponnani',lpgWait:4,lpgStock:'good',stations:[{name:'BPCL',addr:'Ponnani Beach Rd'}]},
+    {name:'Tirurrangadi Panchayat',ml:'തിരൂരങ്ങാടി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:16,autoMax:95,lpgDistributor:'HPCL — Tirurrangadi',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Tirurrangadi Rd'}]},
+    {name:'Tanur Panchayat',ml:'തണ്ണൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:75,autoMin:16,autoMax:92,lpgDistributor:'IndianOil — Tanur',lpgWait:5,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Tanur Junction'}]},
+  ],
+  'Kottayam':[
+    {name:'Kottayam Municipality',ml:'കോട്ടയം നഗരസഭ',type:'municipality',cess:1.00,col:98,autoMin:25,autoMax:160,lpgDistributor:'HPCL HP Gas — Kottayam',lpgWait:2,lpgStock:'good',stations:[{name:'HPCL',addr:'Baker Junction, Kottayam'},{name:'IndianOil',addr:'KK Road, Kottayam'},{name:'BPCL',addr:'MC Road, Kottayam'}]},
+    {name:'Pala Municipality',ml:'പാല നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:22,autoMax:138,lpgDistributor:'IndianOil — Pala',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Pala Town Rd'},{name:'HPCL',addr:'Pala MC Road'}]},
+    {name:'Changanacherry Municipality',ml:'ചങ്ങനാശ്ശേരി നഗരസഭ',type:'municipality',cess:1.00,col:92,autoMin:24,autoMax:148,lpgDistributor:'BPCL — Changanacherry',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Changanacherry Town'},{name:'IndianOil',addr:'MC Road, Changanacherry'}]},
+    {name:'Ettumanoor Municipality',ml:'എട്ടുമാനൂർ നഗരസഭ',type:'municipality',cess:1.00,col:87,autoMin:22,autoMax:135,lpgDistributor:'HPCL — Ettumanoor',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Ettumanoor Temple Rd'}]},
+    {name:'Vaikom Municipality',ml:'വൈക്കം നഗരസഭ',type:'municipality',cess:1.00,col:85,autoMin:20,autoMax:128,lpgDistributor:'IndianOil — Vaikom',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Vaikom Market Rd'}]},
+    {name:'Erattupetta Panchayat',ml:'ഏറ്റുമാനൂർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:80,autoMin:18,autoMax:105,lpgDistributor:'BPCL — Erattupetta',lpgWait:4,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Erattupetta Junction'}]},
+    {name:'Kanjirappally Panchayat',ml:'കാഞ്ഞിരപ്പള്ളി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:78,autoMin:18,autoMax:100,lpgDistributor:'HPCL — Kanjirappally',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Kanjirappally Town'}]},
+  ],
+  'Alappuzha':[
+    {name:'Alappuzha Municipality',ml:'ആലപ്പുഴ നഗരസഭ',type:'municipality',cess:1.00,col:94,autoMin:24,autoMax:150,lpgDistributor:'BPCL Indane — Alappuzha',lpgWait:4,lpgStock:'moderate',stations:[{name:'BPCL',addr:'Mullackal, Alappuzha'},{name:'HPCL',addr:'Cullen Rd, Alappuzha'},{name:'IndianOil',addr:'KSRTC Rd, Alappuzha'}]},
+    {name:'Cherthala Municipality',ml:'ചേർത്തല നഗരസഭ',type:'municipality',cess:1.00,col:86,autoMin:22,autoMax:135,lpgDistributor:'HPCL — Cherthala',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Cherthala Town'},{name:'IndianOil',addr:'NH66, Cherthala'}]},
+    {name:'Kayamkulam Municipality',ml:'കായംകുളം നഗരസഭ',type:'municipality',cess:1.00,col:84,autoMin:20,autoMax:128,lpgDistributor:'IndianOil — Kayamkulam',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Kayamkulam Town'},{name:'BPCL',addr:'Kayamkulam Market'}]},
+    {name:'Mavelikara Municipality',ml:'മാവേലിക്കര നഗരസഭ',type:'municipality',cess:1.00,col:82,autoMin:20,autoMax:122,lpgDistributor:'BPCL — Mavelikara',lpgWait:4,lpgStock:'good',stations:[{name:'BPCL',addr:'Mavelikara Town Rd'}]},
+    {name:'Haripad Panchayat',ml:'ഹരിപ്പാട് പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:18,autoMax:98,lpgDistributor:'HPCL — Haripad',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Haripad Junction'}]},
+    {name:'Kuttanad Panchayat',ml:'കുട്ടനാട് പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:72,autoMin:16,autoMax:90,lpgDistributor:'IndianOil — Kuttanad',lpgWait:6,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Champakulam Rd'}]},
+  ],
+  'Idukki':[
+    {name:'Thodupuzha Municipality',ml:'തൊടുപുഴ നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:22,autoMax:140,lpgDistributor:'HPCL HP Gas — Thodupuzha',lpgWait:7,lpgStock:'low',stations:[{name:'HPCL',addr:'Thodupuzha Town'},{name:'IndianOil',addr:'Thodupuzha Bypass'},{name:'BPCL',addr:'MC Road, Thodupuzha'}]},
+    {name:'Munnar Panchayat',ml:'മൂന്നാർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:78,autoMin:18,autoMax:100,lpgDistributor:'IndianOil — Munnar',lpgWait:8,lpgStock:'low',stations:[{name:'IndianOil',addr:'Munnar Town Rd'},{name:'BPCL',addr:'Munnar Market'}]},
+    {name:'Kattappana Panchayat',ml:'കട്ടപ്പന പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:16,autoMax:95,lpgDistributor:'HPCL — Kattappana',lpgWait:7,lpgStock:'low',stations:[{name:'HPCL',addr:'Kattappana Town'},{name:'BPCL',addr:'Kattappana Bypass'}]},
+    {name:'Adimali Panchayat',ml:'അടിമാലി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:72,autoMin:16,autoMax:88,lpgDistributor:'IndianOil — Adimali',lpgWait:9,lpgStock:'low',stations:[{name:'IndianOil',addr:'Adimali Town'}]},
+    {name:'Nedumkandam Panchayat',ml:'നെടുംകണ്ടം പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:70,autoMin:15,autoMax:85,lpgDistributor:'BPCL — Nedumkandam',lpgWait:8,lpgStock:'low',stations:[{name:'BPCL',addr:'Nedumkandam Junction'}]},
+  ],
+  'Pathanamthitta':[
+    {name:'Pathanamthitta Municipality',ml:'പത്തനംതിട്ട നഗരസഭ',type:'municipality',cess:1.00,col:92,autoMin:24,autoMax:148,lpgDistributor:'HPCL HP Gas — Pathanamthitta',lpgWait:3,lpgStock:'good',stations:[{name:'HPCL',addr:'Pathanamthitta Town'},{name:'IndianOil',addr:'MC Road, Pathanamthitta'},{name:'BPCL',addr:'Pathanamthitta Bypass'}]},
+    {name:'Adoor Municipality',ml:'ആടൂർ നഗരസഭ',type:'municipality',cess:1.00,col:82,autoMin:20,autoMax:122,lpgDistributor:'IndianOil — Adoor',lpgWait:4,lpgStock:'good',stations:[{name:'IndianOil',addr:'Adoor Town'},{name:'HPCL',addr:'NH 183, Adoor'}]},
+    {name:'Thiruvalla Municipality',ml:'തിരുവല്ല നഗരസഭ',type:'municipality',cess:1.00,col:88,autoMin:22,autoMax:138,lpgDistributor:'BPCL — Thiruvalla',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Thiruvalla Town'},{name:'HPCL',addr:'MC Road, Thiruvalla'}]},
+    {name:'Ranni Panchayat',ml:'റാന്നി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:75,autoMin:18,autoMax:95,lpgDistributor:'HPCL — Ranni',lpgWait:5,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Ranni Town Rd'}]},
+    {name:'Konni Panchayat',ml:'കൊന്നി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:72,autoMin:16,autoMax:90,lpgDistributor:'IndianOil — Konni',lpgWait:6,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Konni Town'}]},
+  ],
+  'Wayanad':[
+    {name:'Kalpetta Municipality',ml:'കൽപ്പറ്റ നഗരസഭ',type:'municipality',cess:1.00,col:90,autoMin:22,autoMax:140,lpgDistributor:'HPCL HP Gas — Kalpetta',lpgWait:6,lpgStock:'low',stations:[{name:'HPCL',addr:'Kalpetta Town'},{name:'IndianOil',addr:'Kalpetta Bypass'},{name:'BPCL',addr:'NH766, Kalpetta'}]},
+    {name:'Mananthavady Municipality',ml:'മാനന്തവാടി നഗരസഭ',type:'municipality',cess:1.00,col:84,autoMin:20,autoMax:125,lpgDistributor:'IndianOil — Mananthavady',lpgWait:7,lpgStock:'low',stations:[{name:'IndianOil',addr:'Mananthavady Town'},{name:'HPCL',addr:'Mananthavady Market'}]},
+    {name:'Sulthan Bathery Municipality',ml:'സുൽത്താൻ ബത്തേരി നഗരസഭ',type:'municipality',cess:1.00,col:86,autoMin:20,autoMax:130,lpgDistributor:'BPCL — Sulthan Bathery',lpgWait:7,lpgStock:'low',stations:[{name:'BPCL',addr:'Sulthan Bathery Town'},{name:'HPCL',addr:'Sulthan Bathery Bypass'}]},
+    {name:'Ambalavayal Panchayat',ml:'അമ്പലവയൽ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:75,autoMin:16,autoMax:95,lpgDistributor:'IndianOil — Ambalavayal',lpgWait:8,lpgStock:'low',stations:[{name:'IndianOil',addr:'Ambalavayal Rd'}]},
+    {name:'Vythiri Panchayat',ml:'വൈത്തിരി പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:72,autoMin:15,autoMax:88,lpgDistributor:'HPCL — Vythiri',lpgWait:8,lpgStock:'low',stations:[{name:'HPCL',addr:'Vythiri Junction'}]},
+  ],
+  'Kasaragod':[
+    {name:'Kasaragod Municipality',ml:'കാസർഗോഡ് നഗരസഭ',type:'municipality',cess:1.00,col:90,autoMin:24,autoMax:148,lpgDistributor:'HPCL HP Gas — Kasaragod',lpgWait:2,lpgStock:'good',stations:[{name:'HPCL',addr:'Kasaragod Town'},{name:'IndianOil',addr:'NH66, Kasaragod'},{name:'BPCL',addr:'Kasaragod Market'}]},
+    {name:'Kanhangad Municipality',ml:'കാഞ്ഞങ്ങാട് നഗരസഭ',type:'municipality',cess:1.00,col:85,autoMin:22,autoMax:135,lpgDistributor:'IndianOil — Kanhangad',lpgWait:3,lpgStock:'good',stations:[{name:'IndianOil',addr:'Kanhangad Town'},{name:'HPCL',addr:'Kanhangad Market Rd'}]},
+    {name:'Nileshwar Municipality',ml:'നിലേശ്വർ നഗരസഭ',type:'municipality',cess:1.00,col:80,autoMin:20,autoMax:120,lpgDistributor:'BPCL — Nileshwar',lpgWait:3,lpgStock:'good',stations:[{name:'BPCL',addr:'Nileshwar Town'},{name:'HPCL',addr:'Nileshwar Junction'}]},
+    {name:'Uppala Panchayat',ml:'ഉപ്പള പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:74,autoMin:16,autoMax:92,lpgDistributor:'IndianOil — Uppala',lpgWait:4,lpgStock:'moderate',stations:[{name:'IndianOil',addr:'Uppala Town Rd'}]},
+    {name:'Manjeshwar Panchayat',ml:'മഞ്ചേശ്വർ പഞ്ചായത്ത്',type:'panchayat',cess:0.50,col:76,autoMin:16,autoMax:95,lpgDistributor:'HPCL — Manjeshwar',lpgWait:4,lpgStock:'moderate',stations:[{name:'HPCL',addr:'Manjeshwar Junction'}]},
+  ],
+};
+
+let lang = 'en';
+let currentCity = 'Thiruvananthapuram';
+let currentLB = null;
+let chartInst = null;
+
+const T = {
+  en:{
+    petrol:'Petrol',diesel:'Diesel',cng:'CNG',ev:'EV Charging',lpg:'LPG Cylinder',
+    perLitre:'per litre',perUnit:'per kWh',perCyl:'per 14.2kg cyl',
+    lpgStock:'Availability',lpgWait:'Delivery wait',lpgGood:'Good',lpgMod:'Moderate',lpgLow:'Low stock',
+    lpgDays:'days',lpgNote:'14.2kg domestic cylinder. Subsidised rate via PAHAL/PMUY.',
+    lpgSubLabel:'Subsidised (PMUY)',lpgMktLabel:'Market rate',lpgDelivLabel:'+ delivery',
+    vsKerala:'vs Kerala avg',vsIndia:'vs India avg',
+    colIndex:'COL Index',monthlyTotal:'Monthly total',fuelShare:'Fuel % of budget',
+    cheapest:'Cheapest district',costliest:'Costliest district',inKerala:'In Kerala',
+    bestPrices:'Best petrol prices near you',bestIn:'Best price in',
+    directions:'Directions',map:'Map',
+    savings:'Filling up at',savingsEnd:'instead of district avg saves est.',perYear:'/ year (1,000 km · 18 km/l).',
+    rippleTitle:'How fuel prices affect daily life',
+    rice:'Rice (5kg)',coconutOil:'Coconut oil (1L)',vegetables:'Vegetables (daily)',
+    rent:'Rent (monthly)',utilities:'Utilities',auto:'Auto/bus fare (daily)',
+    school:'School fees (monthly)',dining:'Dining out (monthly)',
+    budgetTitle:'Monthly household budget',walletTitle:'Where ₹100 goes',
+    chartTitle:'District comparison — fuel & monthly spend',
+    fuelCost:'Fuel/mo',totalCost:'Total/mo',selectedDistrict:'Selected district',
+    colNote:'COL Index: how expensive this district is vs Kerala average (100). 120 = 20% pricier.',
+    insightHigh:'Fuel prices are ₹{diff} above Kerala average, adding ₹{extra} to annual household costs.',
+    insightLow:'Fuel prices are ₹{diff} below Kerala average — a small but meaningful saving.',
+    vsLastMonth:'vs last month',
+  },
+  ml:{
+    petrol:'പെട്രോൾ',diesel:'ഡീസൽ',cng:'CNG',ev:'EV ചാർജിംഗ്',lpg:'LPG സിലിണ്ടർ',
+    perLitre:'പ്രതി ലിറ്റർ',perUnit:'പ്രതി kWh',perCyl:'14.2kg സിലിണ്ടർ',
+    lpgStock:'ലഭ്യത',lpgWait:'ഡെലിവറി കാത്തിരിപ്പ്',lpgGood:'നല്ലത്',lpgMod:'ഇടത്തരം',lpgLow:'കുറവ്',
+    lpgDays:'ദിവസം',lpgNote:'14.2kg ഗാർഹിക സിലിണ്ടർ. PAHAL/PMUY വഴി സബ്‌സിഡി.',
+    lpgSubLabel:'സബ്‌സിഡി (PMUY)',lpgMktLabel:'വിപണി നിരക്ക്',lpgDelivLabel:'+ ഡെലിവറി',
+    vsKerala:'കേരള ശരാശരിക്ക് നേരെ',vsIndia:'ഇന്ത്യ ശരാശരിക്ക് നേരെ',
+    colIndex:'ജീവിത സൂചിക',monthlyTotal:'പ്രതിമാസ ആകെ',fuelShare:'ബജറ്റിലെ ഇന്ധനം',
+    cheapest:'ഏറ്റവും വിലകുറഞ്ഞ',costliest:'ഏറ്റവും ചെലവേറിയ',inKerala:'കേരളത്തിൽ',
+    bestPrices:'സമീപത്തെ ഏറ്റവും കുറഞ്ഞ വില',bestIn:'ഏറ്റവും കുറഞ്ഞ വില',
+    directions:'വഴി',map:'മാപ്പ്',
+    savings:'',savingsEnd:'ൽ ഇന്ധനം നിറക്കുന്നത് ഒരു വർഷം ഏകദേശം ₹',perYear:' ലാഭിക്കും.',
+    rippleTitle:'ഇന്ധന വില ദൈനംദിന ജീവിതത്തെ ബാധിക്കുന്നത്',
+    rice:'അരി (5kg)',coconutOil:'വെളിച്ചെണ്ണ (1L)',vegetables:'പച്ചക്കറി (ദൈനംദിനം)',
+    rent:'വാടക (മാസം)',utilities:'വൈദ്യുതി / വെള്ളം',auto:'ഓട്ടോ/ബസ് (ദൈനംദിനം)',
+    school:'സ്കൂൾ ഫീസ് (മാസം)',dining:'ഹോട്ടൽ (മാസം)',
+    budgetTitle:'പ്രതിമാസ ഗൃഹ ബജറ്റ്',walletTitle:'₹100 എവിടെ പോകുന്നു',
+    chartTitle:'ജില്ലാ താരതമ്യം',
+    fuelCost:'ഇന്ധനം/മാസം',totalCost:'ആകെ/മാസം',selectedDistrict:'തിരഞ്ഞെടുത്ത ജില്ല',
+    colNote:'ജീവിത സൂചിക: കേരള ശരാശരി (100) നേരെ. 120 = 20% കൂടുതൽ ചെലവ്.',
+    insightHigh:'ഇന്ധന വില കേരള ശരാശരിക്ക് ₹{diff} കൂടുതൽ, വാർഷിക ചെലവ് ₹{extra} ഉയരും.',
+    insightLow:'ഇന്ധന വില കേരള ശരാശരിക്ക് ₹{diff} കുറവ് — ചെറിയ ലാഭം.',
+    vsLastMonth:'കഴിഞ്ഞ മാസത്തേക്കാൾ',
+  }
+};
+
+function t(key){ return T[lang][key] || T['en'][key] || key; }
+function fmt(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+function fmtD(n){ return (n>=0?'+':'')+n.toFixed(2); }
+function mapsUrl(s){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name+' petrol pump '+s.addr+' Kerala')}`; }
+
+function setLang(l){
+  lang = l;
+  document.getElementById('btnEN').classList.toggle('active', l==='en');
+  document.getElementById('btnML').classList.toggle('active', l==='ml');
+  populateCities();
+  render();
+}
+
+function populateCities(){
+  const sel = document.getElementById('citySel');
+  sel.innerHTML = '';
+  Object.entries(CITIES).forEach(([k,v])=>{
+    const o = document.createElement('option');
+    o.value = k;
+    o.textContent = lang==='ml' ? v.ml : k;
+    sel.appendChild(o);
+  });
+  sel.value = currentCity;
+  populateLocalBodies();
+}
+
+function populateLocalBodies(){
+  const district = document.getElementById('citySel').value;
+  const sel = document.getElementById('lbSel');
+  sel.innerHTML = '';
+  const lb = LOCAL_BODIES[district] || [];
+  const none = document.createElement('option');
+  none.value = '';
+  none.textContent = lang==='ml' ? '— ജില്ല തലം —' : '— District level —';
+  sel.appendChild(none);
+  const typeOrder = {corporation:0, municipality:1, panchayat:2};
+  const typeLabels = {
+    corporation: lang==='ml' ? 'കോർപ്പറേഷൻ' : 'Corporations',
+    municipality: lang==='ml' ? 'നഗരസഭകൾ' : 'Municipalities',
+    panchayat: lang==='ml' ? 'പഞ്ചായത്തുകൾ' : 'Panchayats',
+  };
+  const byType = {corporation:[], municipality:[], panchayat:[]};
+  lb.forEach(l => byType[l.type].push(l));
+  Object.entries(byType).forEach(([type, items])=>{
+    if(!items.length) return;
+    const og = document.createElement('optgroup');
+    og.label = typeLabels[type];
+    items.forEach(l => {
+      const o = document.createElement('option');
+      o.value = l.name;
+      o.textContent = lang==='ml' ? l.ml : l.name;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  if(currentLB && lb.find(l=>l.name===currentLB)) sel.value = currentLB;
+  else sel.value = '';
+}
+
+function onDistrictChange(){
+  currentCity = document.getElementById('citySel').value;
+  currentLB = null;
+  populateLocalBodies();
+  render();
+}
+
+function typeBadge(type){
+  if(type==='corporation') return {label:lang==='ml'?'കോർ':'Corp', color:'var(--ink2)', bg:'var(--surface2)', border:'rgba(20,80,160,.15)'};
+  if(type==='municipality') return {label:lang==='ml'?'നഗ':'Mun', color:'var(--muted)', bg:'var(--surface2)', border:'rgba(10,122,106,.15)'};
+  return {label:lang==='ml'?'പഞ്':'Pan', color:'#15803d', bg:'#f0fdf4', border:'#bbf7d0'};
+}
+
+function renderLBCard(lb, districtPetrol){
+  const el = document.getElementById('lbDetailCard');
+  if(!lb){ el.innerHTML=''; return; }
+  const price = +(districtPetrol + lb.cess).toFixed(2);
+  const badge = typeBadge(lb.type);
+  const stockColor = lb.lpgStock==='good'?'#15803d':lb.lpgStock==='moderate'?'var(--text)':'#dc2626';
+  const stockBg   = lb.lpgStock==='good'?'#f0fdf4':lb.lpgStock==='moderate'?'var(--surface2)':'#fef2f2';
+  const stockBorder = lb.lpgStock==='good'?'#bbf7d0':lb.lpgStock==='moderate'?'var(--border)':'1px solid rgba(181,32,32,.18)';
+  const waitColor = lb.lpgWait<=3?'#15803d':lb.lpgWait<=5?'var(--text)':'#dc2626';
+  const stockLbl = lb.lpgStock==='good'?t('lpgGood'):lb.lpgStock==='moderate'?t('lpgMod'):t('lpgLow');
+  const typeLabel = lb.type==='corporation'?(lang==='ml'?'കോർപ്പറേഷൻ':'Corporation'):lb.type==='municipality'?(lang==='ml'?'നഗരസഭ':'Municipality'):(lang==='ml'?'ഗ്രാമ പഞ്ചായത്ത്':'Grama Panchayat');
+
+  el.innerHTML = `<div style="background:var(--surface);border:1px solid ${badge.border};border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:${badge.bg};color:${badge.color};border:1px solid ${badge.border};font-family:'Inter',sans-serif;letter-spacing:.05em;text-transform:uppercase">${typeLabel}</span>
+        </div>
+        <div style="font-size:17px;font-weight:700;color:var(--text)">${lang==='ml'?lb.ml:lb.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'Share Tech Mono',monospace">+₹${lb.cess.toFixed(2)} local cess · COL sub-index: ${lb.col}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${lang==='ml'?'ഇവിടെ പെട്രോൾ':'Local petrol price'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;color:${price>KERALA_AVG_PETROL+1?'#dc2626':'var(--text)'};line-height:1">₹${price.toFixed(2)}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface2);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${lang==='ml'?'ഓട്ടോ നിരക്ക്':'Auto fare range'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">₹${lb.autoMin}–₹${lb.autoMax}</div>
+        <div style="font-size:10px;color:var(--hint);margin-top:2px">${lang==='ml'?'ആരംഭം – കൂടുതൽ ദൂരം':'min – long distance'}</div>
+      </div>
+      <div style="background:${stockBg};border:1px solid ${stockBorder};border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${t('lpgStock')}</div>
+        <div style="font-size:14px;font-weight:700;color:${stockColor}">${stockLbl}</div>
+        <div style="font-size:10px;color:${waitColor};margin-top:2px">${lb.lpgWait} ${t('lpgDays')} ${lang==='ml'?'കാത്തിരിക്കൽ':'wait'}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid rgba(20,80,160,.12);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${lang==='ml'?'LPG വിതരണക്കാരൻ':'LPG distributor'}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);line-height:1.3">${lb.lpgDistributor}</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${lang==='ml'?'സ്ഥലത്തെ പ്രധാന പൂരകശാലകൾ':'Nearest fuel stations'}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${lb.stations.map((s,i)=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--r)">
+            <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'#f0fdf4':'var(--surface)'};border:1px solid ${i===0?'#bbf7d0':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${i===0?'#15803d':'var(--muted)'};flex-shrink:0">${i+1}</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);min-width:80px">${s.name}</div>
+            <div style="font-size:11px;color:var(--muted);flex:1">${s.addr}</div>
+            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name+' petrol pump '+s.addr+' Kerala')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:10px;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Map
+            </a>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  currentCity = document.getElementById('citySel').value;
+  currentLB = document.getElementById('lbSel').value || null;
+  const d = CITIES[currentCity];
+  if(!d) return;
+
+  // Render local body card if one is selected
+  const lbData = currentLB ? (LOCAL_BODIES[currentCity]||[]).find(l=>l.name===currentLB) : null;
+  renderLBCard(lbData, d.petrol);
+
+  const diff = d.petrol - KERALA_AVG_PETROL;
+  const fuelMonthly = d.fuel_m;
+  const total = d.rent + d.groc + d.auto*22 + d.school + d.dining + fuelMonthly;
+  const fuelPct = fuelMonthly / total;
+
+  // Hero
+  document.getElementById('heroLbl').innerHTML = `${t('petrol')} <span class="ml-lbl">${lang==='en'?'പെട്രോൾ':''}</span>`;
+  const hp = document.getElementById('heroPrice');
+  hp.textContent = '₹' + d.petrol.toFixed(2);
+  hp.className = 'hero-price ' + (d.petrol > KERALA_AVG_PETROL+1 ? 'up' : d.petrol < KERALA_AVG_PETROL-1 ? 'dn' : 'mid');
+  document.getElementById('chgBadge').textContent = (d.chg>=0?'▲ ₹+':'▼ ₹') + Math.abs(d.chg).toFixed(2);
+  document.getElementById('chgBadge').className = 'chg-badge ' + (d.chg>0?'badge-up':'badge-dn');
+  document.getElementById('heroCap').textContent = t('vsLastMonth');
+
+  // Fuel grid — now 5 pills (petrol, diesel, cng, ev, lpg)
+  const fuels = [
+    {key:'petrol',val:d.petrol,unit:t('perLitre'),cls:'fv-petrol',ml:'പെട്രോൾ'},
+    {key:'diesel',val:d.diesel,unit:t('perLitre'),cls:'fv-diesel',ml:'ഡീസൽ'},
+    {key:'cng',val:d.cng,unit:t('perLitre'),cls:'fv-cng',ml:'CNG'},
+    {key:'ev',val:d.ev,unit:t('perUnit'),cls:'fv-ev',ml:'EV'},
+    {key:'lpg',val:d.lpg,unit:t('perCyl'),cls:'fv-lpg',ml:'LPG'},
+  ];
+  document.getElementById('fuelGrid').innerHTML = fuels.map(f=>`
+    <div class="fuel-pill">
+      <div class="fp-lbl">${t(f.key)}</div>
+      ${lang==='en'?`<span class="fp-ml">${f.ml}</span>`:''}
+      <div class="fp-val ${f.cls}">${f.val ? '₹'+f.val.toFixed(2) : 'N/A'}</div>
+      <div class="fp-unit">${f.unit}</div>
+    </div>`).join('');
+
+  // LPG availability card — uses local body data if selected, district data otherwise
+  const lpgSource = lbData
+    ? {stock: lbData.lpgStock, wait: lbData.lpgWait, distributor: lbData.lpgDistributor}
+    : {stock: d.lpg_stock,    wait: d.lpg_wait,    distributor: null};
+
+  const stockColor = lpgSource.stock==='good' ? '#15803d' : lpgSource.stock==='moderate' ? 'var(--text)' : '#dc2626';
+  const stockBg   = lpgSource.stock==='good' ? '#f0fdf4' : lpgSource.stock==='moderate' ? 'var(--surface2)' : '#fef2f2';
+  const stockBorder = lpgSource.stock==='good' ? '#bbf7d0' : lpgSource.stock==='moderate' ? 'var(--border)' : '1px solid rgba(181,32,32,.18)';
+  const stockLbl = lpgSource.stock==='good' ? t('lpgGood') : lpgSource.stock==='moderate' ? t('lpgMod') : t('lpgLow');
+  const stockIcon = lpgSource.stock==='good' ? '✓' : lpgSource.stock==='moderate' ? '~' : '!';
+  const waitColor = lpgSource.wait<=3 ? '#15803d' : lpgSource.wait<=5 ? 'var(--text)' : '#dc2626';
+
+  // Insert LPG card right after fuelGrid (before statsGrid) in the DOM
+  let lpgEl = document.getElementById('lpgCard');
+  if(!lpgEl){
+    lpgEl = document.createElement('div');
+    lpgEl.id = 'lpgCard';
+    document.getElementById('statsGrid').insertAdjacentElement('beforebegin', lpgEl);
+  }
+  lpgEl.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:14px">
+      <div style="display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:180px">
+          <div style="width:44px;height:44px;border-radius:10px;background:${stockBg};border:1px solid ${stockBorder};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🔵</div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">${t('lpg')}${lang==='en'?` <span style="font-family:'Noto Sans Malayalam',sans-serif;font-weight:400;font-size:10px;color:var(--hint)">LPG സിലിണ്ടർ</span>`:''}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">14.2 kg cylinder</div>
+            ${lpgSource.distributor ? `<div style="font-size:11px;color:var(--ink2);margin-top:4px;font-weight:500">${lpgSource.distributor}</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r);padding:10px 14px;text-align:center;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${t('lpgSubLabel')}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:#15803d;line-height:1">₹${d.lpg.toFixed(2)}</div>
+            <div style="font-size:10px;color:#15803d;margin-top:3px;opacity:.75">+ ₹${d.lpg_delivery} ${t('lpgDelivLabel')}</div>
+            <div style="font-size:11px;font-weight:700;color:#15803d;margin-top:4px;padding-top:4px;border-top:1px solid #bbf7d0">= ₹${(d.lpg+d.lpg_delivery).toFixed(2)}</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;text-align:center;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${t('lpgMktLabel')}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--text);line-height:1">₹${d.lpg_market.toFixed(2)}</div>
+            <div style="font-size:10px;color:var(--text);margin-top:3px;opacity:.75">+ ₹${d.lpg_delivery} ${t('lpgDelivLabel')}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">= ₹${(d.lpg_market+d.lpg_delivery).toFixed(2)}</div>
+          </div>
+          <div style="background:${stockBg};border:1px solid ${stockBorder};border-radius:var(--r);padding:10px 14px;text-align:center;min-width:100px">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${t('lpgStock')}</div>
+            <div style="font-size:14px;font-weight:700;color:${stockColor}">${stockIcon} ${stockLbl}</div>
+            <div style="font-size:10px;color:${waitColor};margin-top:5px;font-weight:600">${lpgSource.wait} ${t('lpgDays')}</div>
+            <div style="font-size:9px;color:var(--hint);margin-top:1px">${lang==='ml'?'കാത്തിരിക്കൽ':'delivery wait'}</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid rgba(20,80,160,.12);border-radius:var(--r);padding:10px 14px;text-align:center;min-width:100px">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${lang==='ml'?'2 സിലിണ്ടർ/മാസം':'Monthly (2 cyl)'}</div>
+            <div style="font-size:14px;font-weight:700;color:#15803d">₹${Math.round((d.lpg+d.lpg_delivery)*2).toLocaleString('en-IN')}</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:3px">${lang==='ml'?'സബ്‌സിഡി':'subsidised'}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:5px">₹${Math.round((d.lpg_market+d.lpg_delivery)*2).toLocaleString('en-IN')}</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:1px">${lang==='ml'?'വിപണി':'market'}</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--hint);padding-top:8px;border-top:1px solid var(--border);line-height:1.5">${lbData ? (lang==='ml'?`${lbData.ml} — ${t('lpgNote')}`:t('lpgNote')+` (${lbData.name})`) : t('lpgNote')} ${lang==='en'?'Market rate applies to non-PMUY/PAHAL connections. Delivery charge varies by dealer.':'വിപണി നിരക്ക് PMUY/PAHAL ഇതര കണക്ഷനുകൾക്ക്. ഡെലിവറി ചാർജ് ഡീലർ അനുസരിച്ച് വ്യത്യാസപ്പെടും.'}</div>
+    </div>`;
+
+  // Stats
+  const kerala_col_avg = 100;
+  const colCls = d.col>110?'sc-danger':d.col>100?'sc-warn':'sc-ok';
+  document.getElementById('statsGrid').innerHTML = [
+    {l:t('petrol'),ml:'പെട്രോൾ',v:'₹'+d.petrol.toFixed(2),sub:fmtD(diff)+' '+t('vsKerala'),cls:diff>2?'sc-danger':diff>0?'sc-warn':'sc-ok',note:''},
+    {l:t('colIndex'),ml:'ജീവിത സൂചിക',v:d.col,sub:'100 = Kerala avg',cls:colCls,note:t('colNote')},
+    {l:t('monthlyTotal'),ml:'ആകെ ചെലവ്',v:fmt(total),sub:'all expenses',cls:total>55000?'sc-danger':total>40000?'sc-warn':'sc-ok',note:''},
+    {l:t('fuelShare'),ml:'ഇന്ധന %',v:Math.round(fuelPct*100)+'%',sub:fmt(fuelMonthly)+'/mo',cls:fuelPct>.12?'sc-danger':fuelPct>.08?'sc-warn':'sc-ok',note:''},
+  ].map(s=>`<div class="stat-card">
+    <div class="sc-lbl">${s.l}${lang==='en'?`<span class="ml-lbl">${s.ml}</span>`:''}
+    </div>
+    <div class="sc-val ${s.cls}">${s.v}</div>
+    <div class="sc-sub">${s.sub}</div>
+    ${s.note?`<div class="sc-note">${s.note}</div>`:''}
+  </div>`).join('');
+
+  // VS strip
+  const entries = Object.entries(CITIES);
+  const cheap = entries.reduce((a,b)=>b[1].petrol<a[1].petrol?b:a);
+  const costly = entries.reduce((a,b)=>b[1].petrol>a[1].petrol?b:a);
+  document.getElementById('vsStrip').innerHTML = `
+    <div class="vs-seg lo">
+      <div class="vs-loc">${t('cheapest')}</div>
+      <div class="vs-num">₹${cheap[1].petrol.toFixed(2)}</div>
+      <div class="vs-lbl">${lang==='ml'?cheap[1].ml:cheap[0]}</div>
+    </div>
+    <div class="vs-seg mid">
+      <div class="vs-loc">${t('inKerala')}</div>
+      <div class="vs-num" style="font-size:13px;color:var(--muted)">₹${KERALA_AVG_PETROL.toFixed(2)} avg</div>
+      <div class="vs-lbl">Kerala</div>
+    </div>
+    <div class="vs-seg hi">
+      <div class="vs-loc">${t('costliest')}</div>
+      <div class="vs-num">₹${costly[1].petrol.toFixed(2)}</div>
+      <div class="vs-lbl">${lang==='ml'?costly[1].ml:costly[0]}</div>
+    </div>`;
+
+  // Stations
+  renderStations(currentCity, d);
+
+  // Ripple
+  const gvn = d.petrol - KERALA_AVG_PETROL;
+  const ripples = [
+    {icon:'🌾',bg:'#FFF8EE',name:t('rice'),ml:'അരി',desc:lang==='en'?'Transport & milling costs pass through to grain prices':'ഗതാഗത ചെലവ് ധാന്യ വിലയെ ബാധിക്കുന്നു',delta:gvn>1?`+₹${Math.round(gvn*2)}/mo`:'Stable',cls:gvn>1?'up':'ri-neu'},
+    {icon:'🥥',bg:'#EDFAF3',name:t('coconutOil'),ml:'വെളിച്ചെണ്ണ',desc:lang==='en'?'Extraction & delivery fuel costs drive oil prices':'ഇന്ധന വര്‍ദ്ധന നാളികേര എണ്ണ വിലയെ ബാധിക്കും',delta:gvn>1?`+₹${Math.round(gvn*3)}/mo`:'Stable',cls:gvn>1?'up':'ri-neu'},
+    {icon:'🚌',bg:'#EEF4FD',name:t('auto'),ml:'ഓട്ടോ/ബസ്',desc:lang==='en'?'Auto-rickshaw fares directly tied to petrol price':'ഓട്ടോ നിരക്ക് നേരിട്ട് പെട്രോൾ വിലയുമായി ബന്ധപ്പെട്ടിരിക്കുന്നു',delta:gvn>2?`+₹5-10/trip`:'Stable',cls:gvn>2?'up':'ri-neu'},
+    {icon:'🏠',bg:'#F5F3FF',name:t('rent'),ml:'വാടക',desc:lang==='en'?'High COL cities see rental demand rise with living costs':'ഉയർന്ന ചെലവ് ജില്ലകളിൽ വാടക കൂടുതലാണ്',delta:d.col>105?'Elevated':'Normal',cls:d.col>105?'up':'ri-neu'},
+    {icon:'🍽️',bg:'#FFF8EE',name:t('dining'),ml:'ഹോട്ടൽ',desc:lang==='en'?'Restaurants raise prices when LPG and delivery costs rise':'LPG, ഡെലിവറി ചെലവ് ഹോട്ടൽ വില ഉയർത്തുന്നു',delta:gvn>1?`+₹${Math.round(gvn*8)}/mo`:'Stable',cls:gvn>1?'up':'ri-neu'},
+  ];
+  document.getElementById('rippleList').innerHTML = ripples.map(r=>`
+    <div class="ripple-item">
+      <div class="ri-icon" style="background:${r.bg}">${r.icon}</div>
+      <div class="ri-body">
+        <div class="ri-name">${r.name}${lang==='en'?`<span class="ml-lbl">${r.ml}</span>`:''}</div>
+        <div class="ri-desc">${r.desc}</div>
+      </div>
+      <div class="ri-delta ${r.cls}">${r.delta}</div>
+    </div>`).join('');
+
+  // Budget bars
+  const budgets = [
+    {n:t('rent'),ml:'വാടക',v:d.rent,color:'#7b1fa2'},
+    {n:t('petrol'),ml:'പെട്രോൾ',v:fuelMonthly,color:'#b05c00'},
+    {n:t('dining'),ml:'ഹോട്ടൽ',v:d.dining,color:'#1a6b3a'},
+    {n:t('school'),ml:'സ്കൂൾ',v:d.school,color:'#1450a0'},
+    {n:t('auto'),ml:'ഓട്ടോ',v:d.auto*22,color:'#0a7a6a'},
+    {n:t('groc') || 'Groceries',ml:'ഭക്ഷ്യ',v:d.groc,color:'#c8960a'},
+  ];
+  const maxB = Math.max(...budgets.map(b=>b.v));
+  document.getElementById('budgetBars').innerHTML = budgets.map(b=>`
+    <div class="col-bar-item">
+      <div class="col-bar-hd">
+        <span class="bn">${b.n}${lang==='en'?`<span class="ml-lbl">${b.ml}</span>`:''}</span>
+        <span class="bv">${fmt(b.v)}/mo</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(b.v/maxB*100)}%;background:${b.color}"></div></div>
+    </div>`).join('');
+
+  // Wallet
+  const wSegs=[
+    {n:lang==='ml'?'വാടക':'Rent',v:d.rent,color:'#7b1fa2'},
+    {n:lang==='ml'?'ഇന്ധനം':'Fuel',v:fuelMonthly,color:'#b05c00'},
+    {n:lang==='ml'?'ഭക്ഷ്യം':'Food',v:d.groc+d.dining,color:'#1a6b3a'},
+    {n:lang==='ml'?'മറ്റുള്ളവ':'Other',v:d.auto*22+d.school,color:'#888'},
+  ];
+  const tot2=wSegs.reduce((a,s)=>a+s.v,0);
+  document.getElementById('walletRow').innerHTML=wSegs.map(s=>{
+    const pct=Math.max(4,Math.round(s.v/tot2*100));
+    return`<div class="wseg" style="flex:${pct};background:${s.color}">${pct>10?s.n:''}</div>`;
+  }).join('');
+  document.getElementById('walletLbls').innerHTML=wSegs.map(s=>`<span>${Math.round(s.v/tot2*100)}% ${s.n}</span>`).join('');
+
+  // Insight
+  const extra = Math.round(Math.abs(diff) * 12 * 1000 / 18);
+  const msg = gvn > 0
+    ? t('insightHigh').replace('{diff}',Math.abs(diff).toFixed(2)).replace('{extra}',extra.toLocaleString('en-IN'))
+    : t('insightLow').replace('{diff}',Math.abs(diff).toFixed(2));
+  document.getElementById('insightBox').innerHTML = msg;
+
+  // Chart
+  renderChart(currentCity);
+}
+
+function renderStations(city, d){
+  const list = STATIONS[city];
+  const el = document.getElementById('stationList');
+  if(!list){ el.innerHTML=`<p style="font-size:12px;color:var(--muted);padding:8px 0">Station data coming soon for this district.</p>`; return; }
+  const sorted=[...list].sort((a,b)=>a.petrol-b.petrol);
+  const best=sorted[0];
+  const saving=Math.round((d.petrol-best.petrol)*12*1000/18);
+  el.innerHTML=`
+    <div class="best-banner">
+      <div>
+        <div class="bb-label">${t('bestIn')} ${lang==='ml'?d.ml:city}${lang==='en'?`<span class="ml-lbl">ഏറ്റവും കുറഞ്ഞ</span>`:''}</div>
+        <div class="bb-name">${best.name}</div>
+        <div class="bb-addr">${best.addr}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="bb-price">₹${best.petrol.toFixed(2)}</div>
+        <a class="map-btn" href="${mapsUrl(best)}" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${t('directions')}
+        </a>
+      </div>
+    </div>
+    ${sorted.map((s,i)=>{
+      const cls=i===0?'sp-low':i===1?'sp-mid':'sp-hi';
+      const rank=i===0?'r1':i===1?'r2':'rn';
+      return`<div class="station-row">
+        <div class="st-rank ${rank}">${i+1}</div>
+        <div class="st-info"><div class="st-name">${s.name}</div><div class="st-addr">${s.addr}</div></div>
+        <div class="st-price ${cls}">₹${s.petrol.toFixed(2)}</div>
+        <a class="map-btn" href="${mapsUrl(s)}" target="_blank" rel="noopener">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${t('map')}
+        </a>
+      </div>`;
+    }).join('')}
+    <div class="savings-note">${lang==='en'?
+      `Filling up at <strong>${best.name}</strong> saves est. <strong>₹${saving}/year</strong> (1,000 km · 18 km/l).`:
+      `<strong>${best.name}</strong> -ൽ നിറക്കുന്നത് ഏകദേശം <strong>₹${saving}/വർഷം</strong> ലാഭിക്കും.`
+    }</div>`;
+}
+
+function renderChart(selCity){
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const cities=Object.keys(CITIES);
+  const labels=cities.map(c=>lang==='ml'?CITIES[c].ml:c);
+  const fuelVals=cities.map(c=>CITIES[c].fuel_m);
+  const totals=cities.map(c=>{const d=CITIES[c];return d.rent+d.groc+d.auto*22+d.school+d.dining+d.fuel_m;});
+  const bRed=cities.map(c=>c===selCity?'rgba(176,92,0,.88)':'rgba(176,92,0,.22)');
+  const bBlue=cities.map(c=>c===selCity?'rgba(20,80,160,.88)':'rgba(20,80,160,.22)');
+  document.getElementById('chartLegend').innerHTML=`
+    <div class="leg-item"><div class="leg-swatch" style="background:#b05c00"></div>${t('fuelCost')}</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#1450a0"></div>${t('totalCost')}</div>
+    <span style="font-size:10px;color:var(--hint);margin-left:4px">${t('selectedDistrict')}</span>`;
+  chartInst=new Chart(document.getElementById('cityChart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:t('fuelCost'),data:fuelVals,backgroundColor:bRed,borderRadius:4,borderSkipped:false},
+      {label:t('totalCost'),data:totals,backgroundColor:bBlue,borderRadius:4,borderSkipped:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{ticks:{color:'#9ca3af',font:{size:10},maxRotation:45},grid:{display:false}},
+        y:{ticks:{color:'#9ca3af',callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'rgba(140,140,140,0.1)'}},
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'₹'+Math.round(ctx.raw).toLocaleString('en-IN')+'/mo'}}},
+    }
+  });
+}
+
+async function detectCity(){
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:6000}));
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+    const geo=await r.json();
+    const county=(geo.address?.county||geo.address?.city||geo.address?.town||'').replace(' District','').replace(' district','').trim();
+    const match=Object.keys(CITIES).find(c=>c.toLowerCase()===county.toLowerCase()||county.toLowerCase().includes(c.toLowerCase())||c.toLowerCase().includes(county.toLowerCase()));
+    if(match){ currentCity=match; document.getElementById('citySel').value=match; populateLocalBodies(); }
+  }catch(e){}
+  render();
+}
+
+function copyLink(){
+  const url=window.location.href;
+  if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>alert('Link copied!'));
+  else prompt('Copy:',url);
+}
+
+// Init
+populateCities();
+if(navigator.geolocation){ detectCity(); }
+else{ render(); }
+</script>
+</body>
+</html>
